@@ -18,10 +18,14 @@ class User extends Model {
     );
     this.addHook('beforeSave', async user => {
       if (user.password) {
-        user.password_hash = await bcrypt.hash('user.password', 8); // The eight is the strength of the hash
+        user.password_hash = await bcrypt.hash(user.password, 8); // The eight is the strength of the hash
       }
     }); // There a functions execute depending of some actions in sequelize
     return this;
+  }
+
+  async checkPassword(password) {
+    return bcrypt.compare(password, this.password_hash);
   }
 }
 
