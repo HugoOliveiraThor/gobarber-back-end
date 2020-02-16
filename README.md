@@ -342,3 +342,37 @@ export default new SessionController();
 - Third parameter we have some options to increment our token
 
 
+### Validation in back-end - YUP
+- yarn add yup
+- Import is a little different because there is no export default in import so we need to import * as Yup from 'yup'
+
+```
+const schema = Yup.object().shape({
+      name: Yup.string().required(),
+      email: Yup.string().required(),
+      password: Yup.string()
+        .required()
+        .min(6),
+    });
+
+    if (!(await schema.isValid(req.body))) {
+      return res.status(400).json({ error: 'Validation fails' });
+    }
+```
+```
+const schema = Yup.object().shape({
+      name: Yup.string().required(),
+      email: Yup.string().email(),
+      oldPassword: Yup.string().min(6),
+      password: Yup.string()
+        .min(6)
+        .when('oldPassword'), // We can use conditions validations
+    });
+```
+```
+confirmPassword: Yup.string().when(
+        'password',
+        (password, field) =>
+          password ? field.required().oneOf([Yup.ref('password')]) : field // This means the field needs to be equal
+      ),
+```
