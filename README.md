@@ -376,3 +376,107 @@ confirmPassword: Yup.string().when(
           password ? field.required().oneOf([Yup.ref('password')]) : field // This means the field needs to be equal
       ),
 ```
+### Uploads of files
+- We need a library that can handle with upload of files
+- We will use Multer - Multi part form data
+- In routes we can use
+```
+routes.post('/files', upload.single('file'), FileController.store);
+```
+- we need to create a table in database
+- yarn sequelize migration:create --name="create-files"
+- add content in database -> migrations -> create files
+- yarn sequelize db:migrate
+- create a new migration to add the avatar
+- yarn sequelize migration:create --name=add=avatar-field-to-users
+- Write and the new migrate
+```
+module.exports = {
+  up: (queryInterface, Sequelize) => {
+    return queryInterface.addColumn('users', 'avatar_id', {
+      type: Sequelize.INTEGER,
+      references: { model: 'files', key: 'id' }, // This means all avatar_id is reference in users from table files and key id
+      onUpdate: 'CASCADE', // Some options when changes happens
+      onDelete: 'SET NULL',
+      allowNull: true,
+    });
+  },
+
+  down: (queryInterface, Sequelize) => {
+    return queryInterface.removeColumns('users', 'avatar_id');
+  },
+};
+```
+- Its important associate user to file in model the best way is using a method that associate the both models
+- Inside user model
+```
+static associate(models) {
+    this.belongsTo(models.File, { foreignKey: 'avatar_id' }); // This means i will associate this model to File
+  }
+```
+- BelongTo -> User has foreign key whatever
+- HasOne -> we have id_user inside model File
+- HasMany -> id_user inside many registers
+- In index from database we have to reference the associate
+```
+  class Database {
+  constructor() {
+    this.init();
+  }
+
+  init() {
+    this.connection = new Sequelize(databaseConfig);
+    models
+      .map(model => model.init(this.connection))
+      .map(model => model.associate && model.associate); // Only this methods exist
+  }
+}
+
+```
+### Create virtual elements in Models Sequelize
+- We can create an element that not exists in database
+```
+class File extends Model {
+  static init(sequelize) {
+    super.init(
+      {
+        name: Sequelize.STRING,
+        path: Sequelize.STRING,
+        url: {
+          type: Sequelize.VIRTUAL, // This not exists in database
+          get() {
+            return `http://localhost:3333/files/${this.path}`;
+          },
+        },
+      },
+      {
+        sequelize,
+      }
+    );
+    return this;
+  }
+}
+```
+#### Free access to static files
+- we can find in our app.js in our middleware
+```
+import path from 'path';
+middlewares() {
+    this.server.use(express.json());
+    this.server.use(
+      '/files',
+      express.static(path.resolve(__dirname, '..', 'tmp', 'uploads'))
+    );
+  }
+
+```
+### Relationship between two tables
+- We have always give a nickname
+```
+static associate(models) {
+    this.belongsTo(models.user, { foreignKey: 'user_id', as: 'user' }); // when we have 2 relationships we need to give an nickname always
+    this.belongsTo(models.user, { foreignKey: 'provider_id', as: 'user' });
+  }
+```
+
+
